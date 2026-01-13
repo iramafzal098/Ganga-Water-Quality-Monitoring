@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>Ganga River Water Quality Monitoring</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS for Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Leaflet JS for Maps -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <style>
+        /* CSS Variables for Design System */
+        :root {
+            --background: hsl(210, 40%, 98%);
+            --foreground: hsl(222.2, 84%, 4.9%);
+            --card: hsl(0, 0%, 100%);
+            --card-foreground: hsl(222.2, 84%, 4.9%);
+            --primary: hsl(210, 100%, 45%);
+            --primary-foreground: hsl(210, 40%, 98%);
+            --secondary: hsl(174, 100%, 29%);
+            --muted: hsl(210, 40%, 96%);
+            --muted-foreground: hsl(215.4, 16.3%, 46.9%);
+            --destructive: hsl(0, 84.2%, 60.2%);
+            --warning: hsl(38, 92%, 50%);
+            --success: hsl(142, 71%, 45%);
+            --border: hsl(214.3, 31.8%, 91.4%);
+            --radius: 0.5rem;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Roboto', system-ui, sans-serif; 
+            background: linear-gradient(to bottom right, hsl(210, 40%, 96%), hsl(190, 40%, 96%));
+            color: var(--foreground);
+            line-height: 1.5;
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+        .card { background: var(--card); border-radius: var(--radius); box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid var(--border); }
+        .btn { padding: 0.5rem 1rem; border-radius: var(--radius); border: none; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+        .btn-primary { background: var(--primary); color: var(--primary-foreground); }
+        .btn-secondary { background: var(--muted); color: var(--foreground); }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        
+        .input, .select { 
+            width: 100%; padding: 0.5rem; border: 1px solid var(--border); 
+            border-radius: var(--radius); background: var(--background); 
+        }
+        
+        .hidden { display: none; }
+        .flex { display: flex; }
+        .grid { display: grid; }
+        .text-center { text-align: center; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .gap-4 { gap: 1rem; }
+        
+        .alert-critical { border-left: 4px solid var(--destructive); background: hsla(0, 84%, 60%, 0.1); }
+        .alert-warning { border-left: 4px solid var(--warning); background: hsla(38, 92%, 50%, 0.1); }
+        .alert-normal { border-left: 4px solid var(--success); background: hsla(142, 71%, 45%, 0.1); }
+        
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--border); padding: 0.5rem; }
+        .nav-button { flex: 1; text-align: center; padding: 0.5rem; border: none; background: none; cursor: pointer; }
+        .nav-button.active { color: var(--primary); background: var(--muted); }
+        
+        #map { height: 400px; width: 100%; border-radius: var(--radius); }
+        .chart-container { height: 320px; position: relative; }
+    </style>
+</head>
+<body>
+    <!-- 1. ROLE SELECTION SCREEN -->
+    <div id="roleSelection" class="screen">
+        <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;">
+            <div class="card" style="width: 100%; max-width: 400px; padding: 2rem;">
+                <div class="text-center mb-6">
+                    <div style="width: 64px; height: 64px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                        <i data-lucide="droplets" style="width: 32px; height: 32px; color: var(--primary-foreground);"></i>
+                    </div>
+                    <h1 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">Ganga River Water Quality</h1>
+                    <p style="color: var(--muted-foreground);">Monitoring & Forecasting System</p>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <button onclick="showRegistration()" class="btn btn-primary" style="height: 48px; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                        <i data-lucide="user" style="width: 20px; height: 20px;"></i>
+                        Public User
+                    </button>
+                    
+                    <button onclick="alert('Admin interface coming soon!')" class="btn btn-secondary" style="height: 48px; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                        <i data-lucide="shield" style="width: 20px; height: 20px;"></i>
+                        Government Administrator
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 2. USER REGISTRATION FORM -->
+    <div id="registrationForm" class="screen hidden">
+        <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;">
+            <div class="card" style="width: 100%; max-width: 400px; padding: 1.5rem;">
+                <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
+                    <button onclick="showRoleSelection()" class="btn" style="padding: 0.25rem 0.5rem; margin-right: 0.75rem; background: none;">←</button>
+                    <h2 style="font-size: 1.25rem; font-weight: 600;">User Registration</h2>
+                </div>
+                
+                <form id="userRegistrationForm" onsubmit="handleRegistration(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Full Name</label>
+                        <input type="text" id="userName" class="input" placeholder="Enter your full name" required>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">City</label>
+                        <select id="userCity" class="select" required>
+                            <option value="">Select your city</option>
+                            <option value="Haridwar">Haridwar</option>
+                            <option value="Kanpur">Kanpur</option>
+                            <option value="Allahabad">Allahabad</option>
+                            <option value="Varanasi">Varanasi</option>
+                            <option value="Patna">Patna</option>
+                            <option value="Kolkata">Kolkata</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Email Address</label>
+                        <input type="email" id="userEmail" class="input" placeholder="Enter your email" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- 3. MAIN DASHBOARD -->
+    <div id="dashboard" class="screen hidden">
+        <!-- Header -->
+        <div style="background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-bottom: 1px solid var(--border);">
+            <div class="container" style="padding: 1rem; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="width: 40px; height: 40px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i data-lucide="droplets" style="width: 24px; height: 24px; color: var(--primary-foreground);"></i>
+                    </div>
+                    <div>
+                        <h1 style="font-size: 1.125rem; font-weight: 600;">Ganga Monitoring</h1>
+                        <p id="userCityDisplay" style="font-size: 0.875rem; color: var(--muted-foreground);">Varanasi</p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i data-lucide="user" style="width: 16px; height: 16px; color: var(--muted-foreground);"></i>
+                    <span id="userNameDisplay" style="font-size: 0.875rem;">User</span>
+                </div>
+            </div>
+        </div>
+        <div class="container" style="padding: 1.5rem; padding-bottom: 5rem;">
+            <!-- Water Quality Alerts -->
+            <div class="mb-6">
+                <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i data-lucide="alert-triangle" style="width: 20px; height: 20px;"></i>
+                    Water Quality Alerts
+                </h2>
+                
+                <div class="card">
+                    <div id="alertsContainer" style="height: 250px; overflow-y: auto; padding: 1rem;">
+                        <!-- Alert items will be populated by JavaScript -->
+                        <div class="alert-critical p-4 mb-4" style="border-radius: var(--radius);">
+                            <h3 style="font-weight: 600; margin-bottom: 0.5rem;">Critical: Very high bacterial contamination - unsafe for contact</h3>
+                            <p style="color: var(--muted-foreground); font-size: 0.875rem;">Fecal Coliform: 850 CFU/100ml • Dashashwamedh Ghat</p>
+                            <p style="color: var(--muted-foreground); font-size: 0.75rem; margin-top: 0.25rem;">2 hours ago</p>
+                        </div>
+                        
+                        <div class="alert-warning p-4 mb-4" style="border-radius: var(--radius);">
+                            <h3 style="font-weight: 600; margin-bottom: 0.5rem;">Warning: Low dissolved oxygen levels detected</h3>
+                            <p style="color: var(--muted-foreground); font-size: 0.875rem;">DO: 4.2 mg/L • Varanasi Sewage Treatment Plant</p>
+                            <p style="color: var(--muted-foreground); font-size: 0.75rem; margin-top: 0.25rem;">4 hours ago</p>
+                        </div>
+                        
+                        <div class="alert-normal p-4" style="border-radius: var(--radius);">
+                            <h3 style="font-weight: 600; margin-bottom: 0.5rem;">Normal: pH level within acceptable range</h3>
+                            <p style="color: var(--muted-foreground); font-size: 0.875rem;">pH: 7.2 • Dashashwamedh Ghat</p>
+                            <p style="color: var(--muted-foreground); font-size: 0.75rem; margin-top: 0.25rem;">6 hours ago</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Ganga River Map -->
+            <div class="mb-6">
+                <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i data-lucide="droplets" style="width: 20px; height: 20px;"></i>
+                    Ganga River Monitoring Points
+                </h2>
+                
+                <div class="card">
+                    <div id="map"></div>
+                </div>
+                
+                <!-- Map Legend -->
+                <div style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.875rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 12px; height: 12px; background: var(--success); border-radius: 50%;"></div>
+                        <span>Normal Quality</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 12px; height: 12px; background: var(--warning); border-radius: 50%;"></div>
+                        <span>Moderate Pollution</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 12px; height: 12px; background: var(--destructive); border-radius: 50%;"></div>
+                        <span>High Pollution</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 12px; height: 12px; background: #374151; border-radius: 50%;"></div>
+                        <span>Industrial Activity</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 4. ANALYTICS SCREEN -->
+    <div id="analytics" class="screen hidden">
+        <!-- Header -->
+        <div style="background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-bottom: 1px solid var(--border);">
+            <div class="container" style="padding: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                <div style="width: 40px; height: 40px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i data-lucide="bar-chart-3" style="width: 24px; height: 24px; color: var(--primary-foreground);"></i>
+                </div>
+                <div>
+                    <h1 style="font-size: 1.125rem; font-weight: 600;">Water Quality Analytics</h1>
+                    <p style="font-size: 0.875rem; color: var(--muted-foreground);">Historical data and trends</p>
+                </div>
+            </div>
+        </div>
+        <div class="container" style="padding: 1.5rem; padding-bottom: 5rem;">
+            <!-- Parameter Selection -->
+            <div class="card mb-6">
+                <div style="padding: 1.5rem; border-bottom: 1px solid var(--border);">
+                    <h3 style="font-weight: 600;">Select Parameters</h3>
+                </div>
+                <div style="padding: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Water Quality Parameter</label>
+                        <select id="analyticsParameter" class="select" onchange="updateChart()">
+                            <option value="ph">pH Level</option>
+                            <option value="do">Dissolved Oxygen (DO)</option>
+                            <option value="bod">Biological Oxygen Demand (BOD)</option>
+                            <option value="nitrate">Nitrate</option>
+                            <option value="fecal-coliform">Fecal Coliform</option>
+                            <option value="rainfall">Rainfall</option>
+                            <option value="flow">River Flow</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Time Period</label>
+                        <select id="analyticsPeriod" class="select" onchange="updateChart()">
+                            <option value="7">Last 7 Days</option>
+                            <option value="30" selected>Last 30 Days</option>
+                            <option value="90">Last 3 Months</option>
+                            <option value="365">Last Year</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <!-- Chart Container -->
+            <div class="card mb-6">
+                <div style="padding: 1.5rem; border-bottom: 1px solid var(--border);">
+                    <h3 id="chartTitle" style="font-weight: 600;">pH Level Trends</h3>
+                </div>
+                <div style="padding: 1.5rem;">
+                    <div class="chart-container">
+                        <canvas id="analyticsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <!-- Summary Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                <div class="card">
+                    <div style="padding: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <h4 style="font-size: 0.875rem; font-weight: 500; color: var(--muted-foreground);">Current Value</h4>
+                            <p id="currentValue" style="font-size: 1.5rem; font-weight: bold;">7.20</p>
+                            <p id="currentUnit" style="font-size: 0.75rem; color: var(--muted-foreground);">pH</p>
+                        </div>
+                        <div style="width: 48px; height: 48px; background: hsla(142, 71%, 45%, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="trending-up" style="width: 24px; height: 24px; color: var(--success);"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div style="padding: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <h4 style="font-size: 0.875rem; font-weight: 500; color: var(--muted-foreground);">Average (30 days)</h4>
+                            <p id="averageValue" style="font-size: 1.5rem; font-weight: bold;">7.15</p>
+                            <p id="averageUnit" style="font-size: 0.75rem; color: var(--muted-foreground);">pH</p>
+                        </div>
+                        <div style="width: 48px; height: 48px; background: hsla(210, 100%, 45%, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="bar-chart-3" style="width: 24px; height: 24px; color: var(--primary);"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div style="padding: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <h4 style="font-size: 0.875rem; font-weight: 500; color: var(--muted-foreground);">Trend</h4>
+                            <p id="trendValue" style="font-size: 1.5rem; font-weight: bold; color: var(--success);">↗️2.3%</p>
+                            <p style="font-size: 0.75rem; color: var(--muted-foreground);">vs last period</p>
+                        </div>
+                        <div style="width: 48px; height: 48px; background: hsla(142, 71%, 45%, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="trending-up" style="width: 24px; height: 24px; color: var(--success);"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 5. ACCOUNT MANAGEMENT SCREEN -->
+    <div id="account" class="screen hidden">
+        <!-- Header -->
+        <div style="background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-bottom: 1px solid var(--border);">
+            <div class="container" style="padding: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                <div style="width: 40px; height: 40px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i data-lucide="user" style="width: 24px; height: 24px; color: var(--primary-foreground);"></i>
+                </div>
+                <div>
+                    <h1 style="font-size: 1.125rem; font-weight: 600;">My Account</h1>
+                    <p style="font-size: 0.875rem; color: var(--muted-foreground);">Manage your profile</p>
+                </div>
+            </div>
+        </div>
+        <div style="max-width: 600px; margin: 0 auto; padding: 1.5rem; padding-bottom: 5rem;">
+            <!-- Profile Information -->
+            <div class="card mb-6">
+                <div style="padding: 1.5rem; border-bottom: 1px solid var(--border);">
+                    <h3 style="font-weight: 600;">Profile Information</h3>
+                </div>
+                <div style="padding: 1.5rem;">
+                    <form id="profileForm" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Full Name</label>
+                            <input type="text" id="profileName" class="input" placeholder="Enter your full name">
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Email Address</label>
+                            <input type="email" id="profileEmail" class="input" placeholder="Enter your email">
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">City</label>
+                            <select id="profileCity" class="select">
+                                <option value="">Select your city</option>
+                                <option value="Haridwar">Haridwar</option>
+                                <option value="Kanpur">Kanpur</option>
+                                <option value="Allahabad">Allahabad</option>
+                                <option value="Varanasi">Varanasi</option>
+                                <option value="Patna">Patna</option>
+                                <option value="Kolkata">Kolkata</option>
+                            </select>
+                        </div>
+                        
+                        <div style="display: flex; gap: 0.75rem; padding-top: 1rem;">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <button type="button" class="btn btn-secondary" onclick="resetProfile()">Reset</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- Notification Preferences -->
+            <div class="card mb-6">
+                <div style="padding: 1.5rem; border-bottom: 1px solid var(--border);">
+                    <h3 style="font-weight: 600;">Notification Preferences</h3>
+                </div>
+                <div style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <h4 style="font-weight: 500;">Water Quality Alerts</h4>
+                            <p style="font-size: 0.875rem; color: var(--muted-foreground);">Receive notifications for water quality changes</p>
+                        </div>
+                        <label style="position: relative; display: inline-block; width: 44px; height: 24px;">
+                            <input type="checkbox" id="alertsToggle" style="opacity: 0; width: 0; height: 0;" checked>
+                            <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--primary); transition: .4s; border-radius: 24px;"></span>
+                            <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;"></span>
+                        </label>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <h4 style="font-weight: 500;">Critical Alerts</h4>
+                            <p style="font-size: 0.875rem; color: var(--muted-foreground);">Urgent notifications for dangerous pollution levels</p>
+                        </div>
+                        <label style="position: relative; display: inline-block; width: 44px; height: 24px;">
+                            <input type="checkbox" id="criticalToggle" style="opacity: 0; width: 0; height: 0;" checked>
+                            <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--primary); transition: .4s; border-radius: 24px;"></span>
+                            <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;"></span>
+                        </label>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <h4 style="font-weight: 500;">Weekly Reports</h4>
+                            <p style="font-size: 0.875rem; color: var(--muted-foreground);">Weekly water quality summary for your city</p>
+                        </div>
+                        <label style="position: relative; display: inline-block; width: 44px; height: 24px;">
+                            <input type="checkbox" id="reportsToggle" style="opacity: 0; width: 0; height: 0;">
+                            <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px;"></span>
+                            <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <!-- Account Actions -->
+            <div class="card">
+                <div style="padding: 1.5rem; border-bottom: 1px solid var(--border);">
+                    <h3 style="font-weight: 600;">Account Actions</h3>
+                </div>
+                <div style="padding: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                    <button class="btn" style="display: flex; align-items: center; padding: 1rem; height: auto; justify-content: flex-start; background: var(--background); border: 1px solid var(--border);">
+                        <i data-lucide="download" style="width: 20px; height: 20px; margin-right: 0.75rem;"></i>
+                        <div style="text-align: left;">
+                            <h4 style="font-weight: 500;">Export Data</h4>
+                            <p style="font-size: 0.875rem; color: var(--muted-foreground);">Download your water quality data</p>
+                        </div>
+                    </button>
+                    
+                    <button class="btn" style="display: flex; align-items: center; padding: 1rem; height: auto; justify-content: flex-start; background: var(--background); border: 1px solid var(--border);">
+                        <i data-lucide="lock" style="width: 20px; height: 20px; margin-right: 0.75rem;"></i>
+                        <div style="text-align: left;">
+                            <h4 style="font-weight: 500;">Change Password</h4>
+                            <p style="font-size: 0.875rem; color: var(--muted-foreground);">Update your account password</p>
+                        </div>
+                    </button>
+                    
+                    <button onclick="signOut()" class="btn" style="display: flex; align-items: center; padding: 1rem; height: auto; justify-content: flex-start; background: var(--background); border: 1px solid var(--border); color: var(--destructive);">
+                        <i data-lucide="log-out" style="width: 20px; height: 20px; margin-right: 0.75rem;"></i>
+                        <div style="text-align: left;">
+                            <h4 style="font-weight: 500;">Sign Out</h4>
+                            <p style="font-size: 0.875rem; color: var(--muted-foreground);">Log out of your account</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- BOTTOM NAVIGATION -->
+    <div id="bottomNav" class="bottom-nav hidden">
+        <div style="display: flex; max-width: 400px; margin: 0 auto;">
+            <button class="nav-button" onclick="showScreen('dashboard')" id="navHome">
+                <i data-lucide="home" style="width: 20px; height: 20px; margin: 0 auto 0.25rem; display: block;"></i>
+                <span style="font-size: 0.75rem;">Home</span>
+            </button>
+            <button class="nav-button" onclick="showScreen('analytics')" id="navAnalytics">
+                <i data-lucide="bar-chart-3" style="width: 20px; height: 20px; margin: 0 auto 0.25rem; display: block;"></i>
+                <span style="font-size: 0.75rem;">Analytics</span>
+            </button>
+            <button class="nav-button" onclick="showScreen('account')" id="navAccount">
+                <i data-lucide="user" style="width: 20px; height: 20px; margin: 0 auto 0.25rem; display: block;"></i>
+                <span style="font-size: 0.75rem;">Account</span>
+            </button>
+        </div>
+    </div>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Global variables
+        let currentUser = null;
+        let currentCity = 'Varanasi';
+        let map = null;
+        let chart = null;
+        
+        // Screen management
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
+            
+            // Update navigation
+            if (screenId !== 'roleSelection' && screenId !== 'registrationForm') {
+                document.getElementById('bottomNav').classList.remove('hidden');
+                document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+                if (screenId === 'dashboard') document.getElementById('navHome').classList.add('active');
+                if (screenId === 'analytics') document.getElementById('navAnalytics').classList.add('active');
+                if (screenId === 'account') document.getElementById('navAccount').classList.add('active');
+            } else {
+                document.getElementById('bottomNav').classList.add('hidden');
+            }
+            
+            // Initialize screen-specific functionality
+            if (screenId === 'dashboard') initializeIndiaMap();
+            if (screenId === 'analytics') initializeChart();
+        }
+        
+        function showRoleSelection() {
+            showScreen('roleSelection');
+        }
+        
+        function showRegistration() {
+            showScreen('registrationForm');
+        }
+        
+        // Registration handling
+        function handleRegistration(event) {
+            event.preventDefault();
+            const name = document.getElementById('userName').value;
+            const city = document.getElementById('userCity').value;
+            const email = document.getElementById('userEmail').value;
+            
+            currentUser = { name, city, email };
+            currentCity = city;
+            
+            // Update UI with user info
+            document.getElementById('userNameDisplay').textContent = name;
+            document.getElementById('userCityDisplay').textContent = city;
+            document.getElementById('profileName').value = name;
+            document.getElementById('profileEmail').value = email;
+            document.getElementById('profileCity').value = city;
+            
+            showScreen('dashboard');
+        }
+        
+        // Map initialization
+        function initializeIndiaMap() {
+            if (map) {
+                map.remove();
+            }
+            // Center view on Ganga River basin across India
+            map = L.map('map').setView([26.0, 82.0], 6);
+            
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '©️ OpenStreetMap contributors | Ganga River Monitoring',
+                maxZoom: 18,
+                minZoom: 5
+            }).addTo(map);
+            // Add Ganga River path
+            const gangaPath = [
+                [29.9457, 78.1642], // Haridwar
+                [28.9845, 77.7064], // Delhi area
+                [27.1767, 78.0081], // Agra area  
+                [26.4499, 80.3319], // Kanpur
+                [25.4358, 81.8463], // Allahabad
+                [25.3176, 82.9739], // Varanasi
+                [25.5941, 85.1376], // Patna
+                [25.2048, 86.9597], // Bhagalpur
+                [24.7914, 87.8472], // Rajmahal
+                [23.6102, 88.4037], // Kolkata area
+                [22.1566, 88.2644], // Hooghly
+                [21.8069, 88.1140], // Bay of Bengal
+            ];
+            L.polyline(gangaPath, {
+                color: '#3b82f6',
+                weight: 4,
+                opacity: 0.8,
+                smoothFactor: 1
+            }).addTo(map).bindPopup(`
+                <div>
+                    <strong>River Ganga</strong><br>
+                    <small>Sacred river flowing 2,525 km from Himalayas to Bay of Bengal</small>
+                </div>
+            `);
+            // Add monitoring points across India
+            const monitoringPoints = [
+                // Haridwar
+                { lat: 29.9457, lng: 78.1642, name: 'Har Ki Pauri Ghat', city: 'Haridwar', status: 'normal' },
+                { lat: 29.9200, lng: 78.1500, name: 'Haridwar Industrial Zone', city: 'Haridwar', status: 'industrial' },
+                
+                // Kanpur
+                { lat: 26.4499, lng: 80.3319, name: 'Kanpur Central Ghat', city: 'Kanpur', status: 'warning' },
+                { lat: 26.4300, lng: 80.3500, name: 'Kanpur Leather Industrial Area', city: 'Kanpur', status: 'industrial' },
+                
+                // Allahabad
+                { lat: 25.4358, lng: 81.8463, name: 'Sangam Ghat', city: 'Allahabad', status: 'normal' },
+                { lat: 25.4200, lng: 81.8600, name: 'Allahabad Port Area', city: 'Allahabad', status: 'warning' },
+                
+                // Varanasi
+                { lat: 25.3176, lng: 82.9739, name: 'Dashashwamedh Ghat', city: 'Varanasi', status: 'danger' },
+                { lat: 25.3000, lng: 82.9900, name: 'Varanasi Sewage Treatment Plant', city: 'Varanasi', status: 'normal' },
+                
+                // Patna
+                { lat: 25.5941, lng: 85.1376, name: 'Gandhi Ghat', city: 'Patna', status: 'warning' },
+                { lat: 25.5700, lng: 85.1200, name: 'Patna Industrial Estate', city: 'Patna', status: 'industrial' },
+                
+                // Kolkata
+                { lat: 22.5726, lng: 88.3639, name: 'Princep Ghat', city: 'Kolkata', status: 'normal' },
+                { lat: 22.5500, lng: 88.3400, name: 'Kolkata Port Trust', city: 'Kolkata', status: 'industrial' },
+            ];
+            monitoringPoints.forEach(point => {
+                let color = '#10b981'; // normal
+                if (point.status === 'warning') color = '#f59e0b';
+                if (point.status === 'danger') color = '#ef4444';
+                if (point.status === 'industrial') color = '#374151';
+                // Highlight current city's points with larger radius
+                const radius = point.city === userData.city ? 12 : 8;
+                const weight = point.city === userData.city ? 3 : 2;
+                L.circleMarker([point.lat, point.lng], {
+                    radius: radius,
+                    fillColor: color,
+                    color: color,
+                    weight: weight,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map).bindPopup(`
+                    <div>
+                        <strong>${point.name}</strong><br>
+                        <small>City: ${point.city}</small><br>
+                        <small>Status: ${point.status}</small><br>
+                        <small>Type: ${point.status === 'industrial' ? 'Industrial Zone' : 'Monitoring Ghat'}</small>
+                    </div>
+                `);
+            });
+            // Add major cities labels with population
+            const majorCities = [
+                { lat: 29.9457, lng: 78.1642, name: 'Haridwar', population: '0.23M' },
+                { lat: 26.4499, lng: 80.3319, name: 'Kanpur', population: '2.9M' },
+                { lat: 25.4358, lng: 81.8463, name: 'Allahabad', population: '1.2M' },
+                { lat: 25.3176, lng: 82.9739, name: 'Varanasi', population: '1.4M' },
+                { lat: 25.5941, lng: 85.1376, name: 'Patna', population: '2.0M' },
+                { lat: 22.5726, lng: 88.3639, name: 'Kolkata', population: '4.5M' },
+            ];
+            majorCities.forEach(cityPoint => {
+                L.marker([cityPoint.lat, cityPoint.lng], {
+                    icon: L.divIcon({
+                        className: 'city-label',
+                        html: `<div style="background: rgba(255,255,255,0.9); padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: bold; border: 1px solid #3b82f6; color: #1e40af;">${cityPoint.name}<br><span style="font-size: 10px;">${cityPoint.population}</span></div>`,
+                        iconSize: [80, 30],
+                        iconAnchor: [40, 15]
+                    })
+                }).addTo(map);
+            });
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is already registered
+            const stored = localStorage.getItem('gangaUserData');
+            if (stored) {
+                userData = JSON.parse(stored);
+                showDashboard();
+            } else {
+                showScreen('roleSelection');
+            }
+        });
+        
+        // Chart initialization
+        function initializeChart() {
+            if (!chart) {
+                const ctx = document.getElementById('analyticsChart').getContext('2d');
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan 1', 'Jan 7', 'Jan 14', 'Jan 21', 'Jan 28'],
+                        datasets: [{
+                            label: 'pH Level',
+                            data: [7.2, 7.1, 7.3, 7.0, 7.2],
+                            borderColor: 'hsl(210 100% 45%)',
+                            backgroundColor: 'hsla(210 100% 45% / 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+        }
+        
+       function generateMockData(parameter, period) {
+    const data = [];
+    let baseValue;
+    let variation;
+
+    // Set base values and variation based on the parameter
+    switch (parameter) {
+        case 'ph':
+            baseValue = 7.5;
+            variation = 0.5;
+            break;
+        case 'do':
+            baseValue = 6.0;
+            variation = 1.0;
+            break;
+        case 'bod':
+            baseValue = 3.0;
+            variation = 1.5;
+            break;
+        case 'nitrate':
+            baseValue = 5.0;
+            variation = 2.0;
+            break;
+        case 'fecal-coliform':
+            baseValue = 400;
+            variation = 200;
+            break;
+        case 'rainfall':
+            baseValue = 5;
+            variation = 5;
+            break;
+        case 'flow':
+            baseValue = 2500;
+            variation = 500;
+            break;
+        default:
+            baseValue = 7.5;
+            variation = 0.5;
+    }
+
+    // Generate data points
+    for (let i = 0; i < period; i++) {
+        const value = baseValue + (Math.random() - 0.5) * variation;
+        data.push(parseFloat(value.toFixed(2)));
+    }
+
+    return data;
+}
+
+function updateChart() {
+    const parameter = document.getElementById('analyticsParameter').value;
+    const period = document.getElementById('analyticsPeriod').value;
+    const paramLabel = document.getElementById('analyticsParameter').selectedOptions[0].text;
+
+    document.getElementById('chartTitle').textContent = paramLabel + ' Trends';
+
+    // 1. Generate new mock data based on the selection
+    const newData = generateMockData(parameter, period);
+    const labels = Array.from({ length: period }, (_, i) => `Day ${i + 1}`);
+
+    if (chart) {
+        // 2. Update the chart's data and labels
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = newData;
+        chart.data.datasets[0].label = paramLabel;
+
+        // Set the appropriate color based on the parameter
+        const backgroundColor = (parameter === 'fecal-coliform' || parameter === 'bod') ? 'rgba(255, 99, 132, 0.2)' : 'rgba(54, 162, 235, 0.2)';
+        const borderColor = (parameter === 'fecal-coliform' || parameter === 'bod') ? 'rgba(255, 99, 132, 1)' : 'rgba(54, 162, 235, 1)';
+        chart.data.datasets[0].backgroundColor = backgroundColor;
+        chart.data.datasets[0].borderColor = borderColor;
+
+        // Update the chart
+        chart.update();
+
+        // 3. Update the summary cards
+        const currentValue = newData[newData.length - 1];
+        const sum = newData.reduce((a, b) => a + b, 0);
+        const averageValue = sum / newData.length;
+
+        // Calculate a simple trend percentage
+        const previousPeriodData = generateMockData(parameter, period); // Simulate data from a previous period
+        const previousAverage = previousPeriodData.reduce((a, b) => a + b, 0) / previousPeriodData.length;
+        const trend = ((averageValue - previousAverage) / previousAverage) * 100;
+        
+        document.getElementById('currentValue').textContent = currentValue.toFixed(2);
+        document.getElementById('averageValue').textContent = averageValue.toFixed(2);
+        
+        const trendElement = document.getElementById('trendValue');
+        trendElement.textContent = `${trend >= 0 ? '↗️' : '↘️'}${Math.abs(trend).toFixed(1)}%`;
+        trendElement.style.color = trend >= 0 ? 'var(--success)' : 'var(--destructive)';
+        
+        const unitLabel = getUnitLabel(parameter);
+        document.getElementById('currentUnit').textContent = unitLabel;
+        document.getElementById('averageUnit').textContent = unitLabel;
+    }
+}
+
+function getUnitLabel(parameter) {
+    switch(parameter) {
+        case 'ph': return 'pH';
+        case 'do': return 'mg/L';
+        case 'bod': return 'mg/L';
+        case 'nitrate': return 'mg/L';
+        case 'fecal-coliform': return 'CFU/100ml';
+        case 'rainfall': return 'mm';
+        case 'flow': return 'm³/s';
+        default: return '';
+    }
+}
+        function resetProfile() {
+            if (currentUser) {
+                document.getElementById('profileName').value = currentUser.name;
+                document.getElementById('profileEmail').value = currentUser.email;
+                document.getElementById('profileCity').value = currentUser.city;
+            }
+        }
+        
+        function signOut() {
+            if (confirm('Are you sure you want to sign out?')) {
+                currentUser = null;
+                showScreen('roleSelection');
+            }
+        }
+        
+        // Initialize the application
+        showScreen('roleSelection');
+    </script>
+</body>
+</html>
